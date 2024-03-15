@@ -7,12 +7,12 @@ private:
     int     nrows;      // Number of rows
     int     size;       // Size of the tuples
     int     *lens;      // Lengths of each row
-    char     ***info;    // Information / Payload
+    int     ***info;    // Information / Payload
     bool    copy;       // Is this a copy? (or is the original)
 public:
     Table(int nrows,int size) : nrows(nrows), size(size) {
-        // info    = (char***)malloc(nrows*sizeof(char**));
-        info    = new char**[nrows];
+        // info    = (int***)malloc(nrows*sizeof(int**));
+        info    = new int**[nrows];
         // lens   = (int*)malloc(nrows*sizeof(int));
         lens   = new int[nrows];
         for (int i=0; i<nrows; i++) {
@@ -45,21 +45,21 @@ public:
     void add(int row,int* data) {
         assert (row >= 0 && row < nrows);
         int s = lens[row]+1;
-        char**r;
-        r = new char*[s];
+        int**r;
+        r = new int*[s];
         if (lens[row] == 0) {
-            // r  = (char**)malloc(s*sizeof(char*));
+            // r  = (int**)malloc(s*sizeof(int*));
         }
         else {
-            // r = (char**)realloc(info[row],s*sizeof(char*));
+            // r = (int**)realloc(info[row],s*sizeof(int*));
             for(int i=0; i<s-1; i++) {
                 r[i] = info[row][i];
             }
         }
         info[row] = r;
 
-        // char* t = (char*)malloc(size*sizeof(char));
-        char* t = new char[size];
+        // int* t = (int*)malloc(size*sizeof(int));
+        int* t = new int[size];
 
         info[row][s-1] = t;
         for (int i=0; i<size; i++) {
@@ -81,8 +81,12 @@ public:
         }
     }
     //--------------------------------------------------
-    char*** getTable() {
+    int*** getInfo() {
         return info;
+    }
+    //--------------------------------------------------
+    int** getRow(int r) {
+        return info[r];
     }
     //--------------------------------------------------
     bool exists(int row, int* data) {

@@ -45,7 +45,7 @@ uint64_t gettime() {
 
 int main(int argc, char const *argv[])
 {
-    int n = 7; //atoi(argv[1]);
+    int n = 3; //atoi(argv[1]);
     // cout << " n = " << n << endl;
     Collaboration* model = new Collaboration(n);
     DFS<Collaboration> engine(model);
