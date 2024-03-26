@@ -105,7 +105,7 @@ protected:
 public :
     //-----------------------------------------------------
     EquilibriumPlus(Space& home, ViewArray<IntView> v, ViewArray<IntView> u) 
-    : Propagator(home), vars(v), util(u), n(vars.size()), bests(n,1)
+    : Propagator(home), vars(v), util(u), n(vars.size()), bests(n)
     {
         vars.subscribe(home, *this, PC_INT_DOM);
         util.subscribe(home, *this, PC_INT_DOM);
@@ -113,8 +113,7 @@ public :
         int cols = 1;
         for (int i=n-1; i>=0; i--) {
             for (int j=0; j<cols; j++) {
-                int val[] = {-999};
-                bests.add(i,val);
+                bests.add(i,-999);
             }
             cols *= vars[i].size();
             delta[i] = vars[i].min();
@@ -164,11 +163,11 @@ public :
     }
     //-----------------------------------------------------
     int minBest(int i) {
-        int** row = bests.getRow(i);
-        int found = row[0][0];
+        int* row = bests.getRow(i);
+        int found = row[0];
         for (int j=1; j<bests.len(i); j++) {
-            if (row[j][0] < found) {
-                found = row[j][0];
+            if (row[j] < found) {
+                found = row[j];
             }
         }
         return found;
@@ -213,8 +212,8 @@ public :
                 for (int j=i; j<n; j++) {
                     where.set(j,vars[j].val());
                     for (int k=0; k<bests.len(i); k++) {
-                        int** row = bests.getRow(i);
-                        row[k][0] = -999;
+                        int* row = bests.getRow(i);
+                        row[k] = -999;
                     }
                 }
                 break;
@@ -229,17 +228,17 @@ public :
         for (int i=0; i<n; i++) {
             int utility = util[i].val();
 
-            int** row = bests.getRow(i);
+            int* row = bests.getRow(i);
             int ncol;
 
             if ( i==(n-1) ) ncol = 0;
             else            ncol = where[i+1] - delta[i+1];
 
-            if (utility < row[ncol][0]) {
+            if (utility < row[ncol]) {
                 return false;
             }
             else {
-                row[ncol][0] = utility;
+                row[ncol] = utility;
             }
 
             // Searching for at least one better response
@@ -252,7 +251,7 @@ public :
             DFS<Game> engine(model);
             delete model;
             if (Game* better = engine.next()) {
-                row[ncol][0] = better->getUtility(i);
+                row[ncol] = better->getUtility(i);
                 delete better;
                 return false;
             }
