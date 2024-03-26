@@ -14,7 +14,8 @@
                 "-lgecodekernel",
                 "-lgecodesupport",
                 "-lgecodesearch",
-                "-lgecodeint"
+                "-lgecodeint",
+                "-lgecodeminimodel"
             ],
             "options": {
                 "cwd": "${fileDirname}"

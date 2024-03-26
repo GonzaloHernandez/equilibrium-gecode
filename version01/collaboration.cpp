@@ -17,7 +17,6 @@ public :
     //-----------------------------------------------------
     Collaboration(int n) : vars(*this, n, 0, n-1) {
         equilibriumTable(*this, vars);
-        // equilibrium(*this, vars);
         branch(*this, vars, INT_VAR_NONE(), INT_VAL_MIN());
     }
     //-----------------------------------------------------
@@ -45,8 +44,7 @@ uint64_t gettime() {
 
 int main(int argc, char const *argv[])
 {
-    int n = 3; //atoi(argv[1]);
-    // cout << " n = " << n << endl;
+    int n = 5;//atoi(argv[1]);
     Collaboration* model = new Collaboration(n);
     DFS<Collaboration> engine(model);
     delete model;
@@ -59,6 +57,6 @@ int main(int argc, char const *argv[])
     }
     uint64_t t2 = gettime();
 
-    cout << t2-t1 << endl;
+    cout << "@" << n << " " << t2-t1 << endl;
     return 0;
 }

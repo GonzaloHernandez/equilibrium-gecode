@@ -1,139 +1,155 @@
 #include <gecode/int.hh>
+#include <gecode/minimodel.hh>
 #include "table.h"
 #include "list.h"
 
 using namespace Gecode;
 using namespace Int;
 
-//==============================================================
+//=====================================================================
+
+void equilibrium(Space&, const IntVarArgs&);
+void equilibriumtable(Space&, const IntVarArgs&);
+void equilibriumplus(Space&, const IntVarArgs&);
+
+//=====================================================================
 
 class Game : public Space {
 protected:
     IntVarArray vars;
     IntVar      util;
 public:
-    //-----------------------------------------------------
-    Game(int n) 
-    : vars(*this, n, 0, n-1), util(*this, 1, n) 
-    {
-        branch(*this, vars, INT_VAR_NONE(), INT_VAL_MIN());
-        branch(*this, util, INT_VAL_MIN());
-    }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
+    Game();
+    //------------------------------------------------------------
     Game(Game& source) : Space(source) {
         vars.update(*this, source.vars);
         util.update(*this, source.util);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
+    void setEquilibriumConstraint() {
+        equilibriumplus(*this, vars);
+    }
+    //------------------------------------------------------------
+    void setBranchVars() {
+        branch(*this, vars, INT_VAR_NONE(), INT_VAL_MIN());
+    }
+    //------------------------------------------------------------
+    void setBranchUtil() {
+        branch(*this, util, INT_VAL_MIN());
+    }
+    //------------------------------------------------------------
     virtual Space* copy() {
         return new Game(*this);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     virtual void constrain(const Space& current) {
         const Game& candidate = static_cast<const Game&>(current);
         rel(*this, util, IRT_GR, candidate.util);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
+    void print() const;
+    //------------------------------------------------------------
+    void printAll() const {
+        std::cout << vars << " " << util << std::endl;
+    }
+    //------------------------------------------------------------
     void fixValue(int i,int val) {
         rel(*this, vars[i], IRT_EQ, val);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     void fixAllValues(ViewArray<IntView>& vars) {
         for (int i=0; i<vars.size(); i++) {
             rel(*this, this->vars[i], IRT_EQ, vars[i].val());
         }
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     void fixAllValuesExcept(ViewArray<IntView>& vars,int ei) {
         for (int i=0; i<vars.size(); i++) {
             if (i == ei) continue;
             rel(*this, this->vars[i], IRT_EQ, vars[i].val());
         }
     }
-    //-----------------------------------------------------
-    void setGoal(int i) {
-        count(*this, vars, vars[i], IRT_EQ, util);
-    }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
+    void setGoal(int);    
+    //------------------------------------------------------------
     void setPreference(int val) {
         rel(*this, util, IRT_GR, val);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     void findEqualUtiliy(int val) {
         rel(*this, util, IRT_EQ, val);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     int getUtility() {
         return util.val();
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     int getVal(int i) {
         return vars[i].val();
     }
-    //-----------------------------------------------------
-    void print() const {
-        std::cout << vars << " " << util << std::endl;
-    }
+    //------------------------------------------------------------
 };
 
 
-//==============================================================
-// Filtering by lest cost posible.
-// This propagator filters looking for one better response
-//============================================================== 
+//=====================================================================
+// Searching without storing
+//=====================================================================
 
 class Equilibrium : public Propagator {
 protected:
     ViewArray<IntView> vars;
 public :
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     Equilibrium(Space& home, ViewArray<IntView> v) 
     : Propagator(home), vars(v) 
     {
         vars.subscribe(home, *this, PC_INT_DOM);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     static ExecStatus post(Space& home, ViewArray<IntView> v) {
         (void) new (home) Equilibrium(home, v);
         return ES_OK;
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     Equilibrium(Space& home, Equilibrium& source) 
     : Propagator(home,source)
     {
         vars.update(home, source.vars);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     virtual Propagator* copy(Space& home) {
         return new (home) Equilibrium(home, *this);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     virtual void reschedule(Space& home) {
         vars.reschedule(home, *this, PC_INT_DOM);
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     virtual PropCost cost(const Space&, const ModEventDelta&) const {
         return PropCost::binary(PropCost::LO);
     } 
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     virtual ExecStatus propagate(Space& home, const ModEventDelta&) {
         if (vars.assigned()) {
             if (checkNash(vars) == false) return ES_FAILED;
         }
         return ES_NOFIX;
     }
-    //-----------------------------------------------------
+    //------------------------------------------------------------
     bool checkNash(ViewArray<IntView> vars) {
         int n = vars.size();
         for (int i=0; i<n; i++) {
             int utility;
 
             // Utility calculation
-            Game* model1 = new Game(n);
+            Game* model1 = new Game();
             for (int j=0; j<n; j++) {
                 model1->fixValue(j, vars[j].val());
             }
             model1->setGoal(i);
+            // model1->setBranchVars();
+            model1->setBranchUtil();
             DFS<Game> engine1(model1);
             delete model1;
             if (Game* solution = engine1.next()) {
@@ -142,13 +158,15 @@ public :
             }
 
             // Searching for at least one better response
-            Game* model2 = new Game(n);
+            Game* model2 = new Game();
             for (int j=0; j<n; j++) {
                 if (j!=i) 
                     model2->fixValue(j, vars[j].val());
             }
             model2->setGoal(i);
             model2->setPreference(utility);
+            // model2->setBranchVars();
+            model2->setBranchUtil();
             DFS<Game> engine2(model2);
             delete model2;
             if (Game* better = engine2.next()) {
@@ -161,7 +179,7 @@ public :
     }
 };
 
-//==============================================================
+//---------------------------------------------------------------------
 
 void equilibrium(Space& home, const IntVarArgs& v) {
     ViewArray<IntView> vars(home,v);
@@ -169,9 +187,9 @@ void equilibrium(Space& home, const IntVarArgs& v) {
 }
 
 
-//==============================================================
+//=====================================================================
 // Storing best responses using Table and List
-//==============================================================
+//=====================================================================
 
 class EquilibriumTable : public Propagator {
 protected:
@@ -288,12 +306,13 @@ public :
     bool isBestResponseNew(int* t, int i) {
 
         // Looking for a best response
-        Game* model1 = new Game(n);
+        Game* model1 = new Game();
         for (int j=0; j<n; j++) {
             if (j!=i) 
                 model1->fixValue(j, vars[j].val());
         }
         model1->setGoal(i);
+        model1->setBranchUtil();
         BAB<Game> engine(model1);
         delete model1;
         Game* best = nullptr;
@@ -307,13 +326,14 @@ public :
         bool isBestResponse = false;
 
         // Looking for all best responses
-        Game* model2 = new Game(n);
+        Game* model2 = new Game();
         for (int j=0; j<n; j++) {
             if (j!=i) 
                 model2->fixValue(j, vars[j].val());
         }
         model2->setGoal(i);
         model2->findEqualUtiliy(utility);
+        model2->setBranchUtil();
         DFS<Game> engine2(model2);
         delete model2;
         while (Game* solution = engine2.next()) {
@@ -341,32 +361,42 @@ public :
     }
 };
 
-//==============================================================
+//---------------------------------------------------------------------
 
-void equilibriumTable(Space& home, const IntVarArgs& v) {
+void equilibriumtable(Space& home, const IntVarArgs& v) {
     ViewArray<IntView> vars(home,v);
     if (EquilibriumTable::post(home,vars) != ES_OK) home.fail();
 }
 
 
-//==============================================================
+//=====================================================================
 // Filtering by lest cost posible.
 // This propagator filters looking for one better response
-//============================================================== 
+//=====================================================================
 
 class EquilibriumPlus : public Propagator {
 protected:
     ViewArray<IntView> vars;
     int         n;
     List<int>   where;
-    List<int>   utils;
+    Table       utils;
+    int*        mins;
 public :
     //-----------------------------------------------------
     EquilibriumPlus(Space& home, ViewArray<IntView> v) 
-    : Propagator(home), vars(v), n(vars.size())
+    : Propagator(home), vars(v), n(vars.size()), utils(n,1)
     {
         vars.subscribe(home, *this, PC_INT_DOM);
-        for (int i=0; i<n; i++) utils.append(-999);
+        int cols = 1;
+        mins = new int[n];
+        for (int i=n-1; i>=0; i--) {
+            for (int j=0; j<cols; j++) {
+                int val[] = {-999};
+                utils.add(i,val);
+            }
+            cols *= vars[i].size();
+            mins[i] = vars[i].min();
+        }
     }
     //-----------------------------------------------------
     static ExecStatus post(Space& home, ViewArray<IntView> v) {
@@ -375,11 +405,12 @@ public :
     }
     //-----------------------------------------------------
     EquilibriumPlus(Space& home, EquilibriumPlus& source) 
-    : Propagator(home,source), n(source.n)
+    : Propagator(home,source), n(source.n), utils(source.utils)
     {
         vars.update(home, source.vars);
         where = source.where;
         utils = source.utils;
+        mins  = source.mins;
     }
     //-----------------------------------------------------
     virtual Propagator* copy(Space& home) {
@@ -411,7 +442,11 @@ public :
             else if (vars[i].val() != where[i]) {
                 for (int j=i; j<n; j++) {
                     where.set(j,vars[j].val());
-                    utils.set(j,-999);
+                    for (int k=0; k<utils.len(i); k++) {
+                        int** row = utils.getRow(i);
+                        int val[] = {-999};
+                        row[k] = val;
+                    }
                 }
                 break;
             }
@@ -427,7 +462,7 @@ public :
             int utility;
 
             // Utility calculation
-            Game* model1 = new Game(n);
+            Game* model1 = new Game();
             for (int j=0; j<n; j++) {
                 model1->fixValue(j, vars[j].val());
             }
@@ -439,14 +474,23 @@ public :
                 delete solution;
             }
 
-            if (utility < utils[i]) {
+            int** row = utils.getRow(i);
+            int ncol;
+            if ( i==(n-1) ) {
+                ncol = 0;
+            }
+            else {
+                ncol = where[i+1]-mins[i+1];
+            }
+
+            if (utility < row[ncol][0]) {
                 return false;
             }
             else {
-                utils.set(i,utility);
+                row[ncol][0] = utility;
             }
             // Searching for at least one better response
-            Game* model2 = new Game(n);
+            Game* model2 = new Game();
             for (int j=0; j<n; j++) {
                 if (j!=i) 
                     model2->fixValue(j, vars[j].val());
@@ -456,7 +500,7 @@ public :
             DFS<Game> engine2(model2);
             delete model2;
             if (Game* better = engine2.next()) {
-                utils.set(i,better->getUtility());
+                row[ncol][0] = better->getUtility();
                 delete better;
                 return false;
             }
@@ -466,7 +510,7 @@ public :
     }
 };
 
-//==============================================================
+//---------------------------------------------------------------------
 
 void equilibriumplus(Space& home, const IntVarArgs& v) {
     ViewArray<IntView> vars(home,v);
