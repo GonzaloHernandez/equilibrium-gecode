@@ -14,14 +14,12 @@ uint64_t gettime() {
 
 //=====================================================================
 
-int n;
-int s;
+int n = 4;
+int s = 2;
 
 //------------------------------------------------------------
 Game::Game() : vars(*this,n,0,s-1), util(*this,n,1,s) {
-    for (int i=0; i<n; i++) {
-        setGoal(i);
-    }
+    for (int i=0; i<n; i++) setGoal(i);
     branch(*this, vars, INT_VAR_NONE(), INT_VAL_MIN());
 }
 //------------------------------------------------------------
@@ -37,11 +35,11 @@ void Game::print() const {
 
 int main(int argc, char const *argv[])
 {
-    n = atoi(argv[1]);
-    s = atoi(argv[2]);
+    // n = atoi(argv[1]);
+    // s = atoi(argv[2]);
     
     Game* model = new Game();
-    model->setEquilibriumConstraint();
+    // model->setEquilibriumConstraint();
     DFS<Game> engine(model);
     delete model;
 

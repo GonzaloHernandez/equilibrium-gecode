@@ -150,10 +150,10 @@ public :
     } 
     //-----------------------------------------------------
     virtual ExecStatus propagate(Space& home, const ModEventDelta&) {
-        for (int i=0; i<n; i++) {
-            if (util[i].gq(home, minBest(i)) == Int::ME_INT_FAILED)
-                return ES_FAILED;
-        }
+        // for (int i=0; i<n; i++) {
+        //     if (util[i].gq(home, minBest(i)) == Int::ME_INT_FAILED)
+        //         return ES_FAILED;
+        // }
 
         if (vars.assigned() && util.assigned()) {
             analyseSubspace();
@@ -209,10 +209,11 @@ public :
                 where.append(vars[i].val());
             }
             else if (vars[i].val() != where[i]) {
-                for (int j=i; j<n; j++) {
+                where.set(i,vars[i].val());
+                for (int j=i+1; j<n; j++) {
                     where.set(j,vars[j].val());
-                    for (int k=0; k<bests.len(i); k++) {
-                        int* row = bests.getRow(i);
+                    int* row = bests.getRow(j);
+                    for (int k=0; k<bests.len(j); k++) {
                         row[k] = -999;
                     }
                 }
@@ -225,14 +226,18 @@ public :
     }
     //-----------------------------------------------------
     bool checkNash() {
-        for (int i=0; i<n; i++) {
+        if (vars[0].val()==9 & vars[1].val()==3 & vars[2].val()==3) {
+            std::cout << "***" << std::endl;
+        }
+        for (int i=n-1; i>=0; i--) {
             int utility = util[i].val();
 
             int* row = bests.getRow(i);
             int ncol;
 
             if ( i==(n-1) ) ncol = 0;
-            else            ncol = where[i+1] - delta[i+1];
+            else            ncol = bests.len(i+1) * (where[i] - delta[i]) + 
+                                    (where[i+1] - delta[i+1]);
 
             if (utility < row[ncol]) {
                 return false;

@@ -97,7 +97,9 @@ public:
         int l = lens[row];
         std::string text = "{";
         for (int d=0; d<l; d++) {
-            text += info[row][d] + ",";
+            std::stringstream ss;
+            ss << info[row][d];
+            text += ss.str() + " ";
         }
         text += "}";
         return text;

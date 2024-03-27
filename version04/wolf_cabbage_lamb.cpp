@@ -17,9 +17,9 @@ void Game::setGoal(int i) {
     BoolVar c  = expr(*this, vars[1] == 1);  // Cabbage
     BoolVar l  = expr(*this, vars[2] == 1);  // Lamb
 
-    BoolVar uw = expr(*this, util[0] == 1);  // Utility
-    BoolVar uc = expr(*this, util[1] == 1);  // Utility
-    BoolVar ul = expr(*this, util[2] == 1);  // Utility
+    BoolVar uw = expr(*this, util[0] == 1);  // Wolf utility
+    BoolVar uc = expr(*this, util[1] == 1);  // Cabbage tility
+    BoolVar ul = expr(*this, util[2] == 1);  // Lamb utility
     
     switch (i) {
     case 0: 
