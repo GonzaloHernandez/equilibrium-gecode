@@ -119,6 +119,7 @@ public :
             delta[i] = vars[i].min();
         }
         varsToStr();
+        where.toStr();
     }
     //-----------------------------------------------------
     static ExecStatus post(Space& home, ViewArray<IntView> v, ViewArray<IntView> u) {
@@ -150,27 +151,90 @@ public :
     } 
     //-----------------------------------------------------
     virtual ExecStatus propagate(Space& home, const ModEventDelta&) {
+
         // for (int i=0; i<n; i++) {
         //     if (util[i].gq(home, minBest(i)) == Int::ME_INT_FAILED)
         //         return ES_FAILED;
         // }
 
+        ExecStatus status = ES_NOFIX;
         if (vars.assigned() && util.assigned()) {
             analyseSubspace();
-            if (checkNash() == false) return ES_FAILED;
+            if (checkNash() == false) 
+                status = ES_FAILED;
         }
-        return ES_NOFIX;
+        return status;
     }
     //-----------------------------------------------------
     int minBest(int i) {
         int* row = bests.getRow(i);
         int found = row[0];
         for (int j=1; j<bests.len(i); j++) {
+            if (row[j] == -999) return -999;
             if (row[j] < found) {
                 found = row[j];
             }
         }
         return found;
+    }
+    //-----------------------------------------------------
+    int analyseSubspace() {
+        int i = 0;
+        for ( ; i<n; i++) {
+            if ( where.len() == i) {
+                where.append(vars[i].val());
+            }
+            else if (vars[i].val() != where[i]) {
+                where.set(i,vars[i].val());
+                for (int j=i+1; j<n; j++) {
+                    where.set(j,vars[j].val());
+                    int* row = bests.getRow(j);
+                    for (int k=0; k<bests.len(j); k++) {
+                        row[k] = -999;
+                    }
+                }
+                break;
+            }
+        }
+        if (i == n) return -1;
+
+        return i;
+    }
+    //-----------------------------------------------------
+    bool checkNash() {
+        for (int i=n-1; i>=0; i--) {
+            int utility = util[i].val();
+
+            int ncol = 0;
+            for (int j=i+1; j<n; j++) {
+                ncol += bests.len(j) * (where[j] - delta[j]);
+            }
+
+            int* row = bests.getRow(i);
+            if (utility < row[ncol]) {
+                return false;
+            }
+            else {
+                row[ncol] = utility;
+            }
+
+            // Searching for at least one better response
+            Game* model = new Game();
+            for (int j=0; j<n; j++) {
+                if (j!=i) 
+                    model->fixValue(j, vars[j].val());
+            }
+            model->setPreference(i,utility);
+            DFS<Game> engine(model);
+            delete model;
+            if (Game* better = engine.next()) {
+                row[ncol] = better->getUtility(i);
+                delete better;
+                return false;
+            }
+        }
+
+        return true;
     }
     //-----------------------------------------------------
     std::string varsToStr() {
@@ -200,69 +264,6 @@ public :
         text += "]";
 
         return text;
-    }
-    //-----------------------------------------------------
-    int analyseSubspace() {
-        int i = 0;
-        for ( ; i<n; i++) {
-            if ( where.len() == i) {
-                where.append(vars[i].val());
-            }
-            else if (vars[i].val() != where[i]) {
-                where.set(i,vars[i].val());
-                for (int j=i+1; j<n; j++) {
-                    where.set(j,vars[j].val());
-                    int* row = bests.getRow(j);
-                    for (int k=0; k<bests.len(j); k++) {
-                        row[k] = -999;
-                    }
-                }
-                break;
-            }
-        }
-        if (i == n) return -1;
-
-        return i;
-    }
-    //-----------------------------------------------------
-    bool checkNash() {
-        if (vars[0].val()==9 & vars[1].val()==3 & vars[2].val()==3) {
-            std::cout << "***" << std::endl;
-        }
-        for (int i=n-1; i>=0; i--) {
-            int utility = util[i].val();
-
-            int* row = bests.getRow(i);
-            int ncol;
-
-            if ( i==(n-1) ) ncol = 0;
-            else            ncol = bests.len(i+1) * (where[i] - delta[i]) + 
-                                    (where[i+1] - delta[i+1]);
-
-            if (utility < row[ncol]) {
-                return false;
-            }
-            else {
-                row[ncol] = utility;
-            }
-
-            // Searching for at least one better response
-            Game* model = new Game();
-            for (int j=0; j<n; j++) {
-                if (j!=i) 
-                    model->fixValue(j, vars[j].val());
-            }
-            model->setPreference(i,utility);
-            DFS<Game> engine(model);
-            delete model;
-            if (Game* better = engine.next()) {
-                row[ncol] = better->getUtility(i);
-                delete better;
-                return false;
-            }
-        }
-
-        return true;
     }
 };
 

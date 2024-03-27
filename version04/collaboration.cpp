@@ -14,8 +14,8 @@ uint64_t gettime() {
 
 //=====================================================================
 
-int n = 4;
-int s = 2;
+int n = 6;
+int s = 6;
 
 //------------------------------------------------------------
 Game::Game() : vars(*this,n,0,s-1), util(*this,n,1,s) {
@@ -39,7 +39,7 @@ int main(int argc, char const *argv[])
     // s = atoi(argv[2]);
     
     Game* model = new Game();
-    // model->setEquilibriumConstraint();
+    model->setEquilibriumConstraint();
     DFS<Game> engine(model);
     delete model;
 

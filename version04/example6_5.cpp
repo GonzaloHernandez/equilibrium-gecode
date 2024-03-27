@@ -9,8 +9,8 @@ using namespace std;
 Game::Game() : vars(*this,3,1,9), util(*this,3,0,1) {    
     rel(*this,vars[2],IRT_LQ,3);
 
-    // rel(*this,vars[1],IRT_EQ,6);
-    // rel(*this,vars[2],IRT_EQ,1);
+    // rel(*this,vars[0],IRT_EQ,4);
+    // rel(*this,vars[1],IRT_EQ,4);
 
     for (int i=0; i<3; i++) setGoal(i);
     branch(*this, vars, INT_VAR_NONE(), INT_VAL_MIN());

@@ -11,9 +11,7 @@ private:
 public:
     Table(int nrows) : nrows(nrows) {
         info    = (int**)malloc(nrows*sizeof(int*));
-        // info    = new int*[nrows];
         lens   = (int*)malloc(nrows*sizeof(int));
-        // lens   = new int[nrows];
         for (int i=0; i<nrows; i++) {
             info[i]     = nullptr;
             lens[i]    = 0;
@@ -35,9 +33,7 @@ public:
             empty(i);
         }
         free(info);
-        // delete info;
         free(lens);
-        // delete lens;
     }
     //--------------------------------------------------
     void add(int row,int data) {
@@ -45,15 +41,11 @@ public:
 
         int s = lens[row];
         int*r;
-        // r = new int[s+1];
         if (lens[row] == 0) {
             r  = (int*)malloc((s+1)*sizeof(int));
         }
         else {
             r = (int*)realloc(info[row],(s+1)*sizeof(int));
-            // for(int i=0; i<s; i++) {
-            //     r[i] = info[row][i];
-            // }
         }
         r[s]        = data;
 
@@ -65,7 +57,6 @@ public:
         assert (row >= 0 && row < nrows);
         if (lens[row] > 0) {
             free(info[row]);
-            // delete info[row];
             lens[row] = 0;
         }
     }
