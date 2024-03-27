@@ -98,3 +98,79 @@ public:
 };
 
 //=======================================================
+
+class Vector {
+private:
+    bool    copy;
+    int     len;
+    int**   info;
+public:
+    Vector() : copy(false), len(0)  {
+        info = (int**)malloc(sizeof(int*));
+    }
+    //--------------------------------------------------
+    Vector(Vector& source) {
+        len  = source.len;
+        info = source.info;
+        copy = true;
+    }
+    //--------------------------------------------------
+    ~Vector() {
+        if (copy) return;
+        empty();
+        free(info);
+    }
+    //--------------------------------------------------
+    void append(int data) {
+        int s = len;
+        int* r;
+        if (len == 0) {
+            r = (int*)malloc((s+1)*sizeof(int));
+        }
+        else {
+            r = (int*)realloc((*info),(s+1)*sizeof(int));            
+        }
+        r[s]    = data;
+        (*info) = r;
+        len     = s+1;
+    }
+    //--------------------------------------------------
+    void empty() {
+        if (len > 0) {
+            free(*info);
+            len = 0;
+            (*info) = nullptr;
+        }
+    }
+    //--------------------------------------------------
+    int* getInfo() {
+        return (*info);
+    }
+    //--------------------------------------------------
+    void set(int i, int data) {
+        assert( i >= 0 && i < len );
+        (*info)[i] = data;
+    }
+    //--------------------------------------------------
+    std::string toStr() {
+        int l = len;
+        std::string text = "[";
+        for (int d=0; d<l; d++) {
+            std::stringstream ss;
+            ss << (*info)[d];
+            text += ss.str() + " ";
+        }
+        text += "]";
+        return text;
+    }
+    //--------------------------------------------------
+    int lenght() {
+        return len;
+    }
+    //--------------------------------------------------
+    int operator[](int i) {
+        assert( i >= 0 && i < len );
+        return (*info)[i];
+    }
+    //--------------------------------------------------
+};

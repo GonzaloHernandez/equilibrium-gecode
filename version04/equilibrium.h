@@ -1,6 +1,6 @@
 #include <gecode/int.hh>
 #include <gecode/minimodel.hh>
-#include "table.h"
+#include "support.h"
 #include "list.h"
 
 using namespace Gecode;
@@ -98,14 +98,14 @@ class EquilibriumPlus : public Propagator {
 protected:
     ViewArray<IntView> vars;
     ViewArray<IntView> util;
-    int         n;
-    List<int>   where;
-    Table       bests;
-    int*        delta;
+    int     n;
+    List<int>  where;
+    Table   bests;
+    int*    delta;
 public :
     //-----------------------------------------------------
     EquilibriumPlus(Space& home, ViewArray<IntView> v, ViewArray<IntView> u) 
-    : Propagator(home), vars(v), util(u), n(vars.size()), bests(n)
+    : Propagator(home), vars(v), util(u), n(vars.size()), where(), bests(n)
     {
         vars.subscribe(home, *this, PC_INT_DOM);
         util.subscribe(home, *this, PC_INT_DOM);
@@ -128,7 +128,7 @@ public :
     }
     //-----------------------------------------------------
     EquilibriumPlus(Space& home, EquilibriumPlus& source) 
-    : Propagator(home,source), n(source.n), bests(source.bests)
+    : Propagator(home,source), n(source.n), bests(source.bests), where(source.where)
     {
         vars.update(home, source.vars);
         util.update(home, source.util);
@@ -181,7 +181,7 @@ public :
     int analyseSubspace() {
         int i = 0;
         for ( ; i<n; i++) {
-            if ( where.len() == i) {
+            if ( where.lenght() == i) {
                 where.append(vars[i].val());
             }
             else if (vars[i].val() != where[i]) {

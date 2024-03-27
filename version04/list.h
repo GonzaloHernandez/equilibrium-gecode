@@ -148,7 +148,7 @@ public:
         }
     }
     //-----------------------------------------------------
-    int len() const {
+    int lenght() const {
         int counter=0;
         Node<T>* aux = (*head);
         while (aux) {
