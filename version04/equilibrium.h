@@ -151,15 +151,18 @@ public :
     } 
     //-----------------------------------------------------
     virtual ExecStatus propagate(Space& home, const ModEventDelta&) {
-
-        // for (int i=0; i<n; i++) {
-        //     if (util[i].gq(home, minBest(i)) == Int::ME_INT_FAILED)
-        //         return ES_FAILED;
-        // }
-
         ExecStatus status = ES_NOFIX;
+
+
+        analyseSubspace();
+        for (int i=0; i<n; i++) {
+            // if (i>0 && vars[i-1].assigned()) {
+                if (util[i].gq(home, minBest(i)) == Int::ME_INT_FAILED)
+                    return ES_FAILED;
+            // }
+        }
+
         if (vars.assigned() && util.assigned()) {
-            analyseSubspace();
             if (checkNash() == false) 
                 status = ES_FAILED;
         }
@@ -168,6 +171,7 @@ public :
     //-----------------------------------------------------
     int minBest(int i) {
         int* row = bests.getRow(i);
+        if (row[0] == -999) return -999;
         int found = row[0];
         for (int j=1; j<bests.len(i); j++) {
             if (row[j] == -999) return -999;
@@ -182,12 +186,12 @@ public :
         int i = 0;
         for ( ; i<n; i++) {
             if ( where.lenght() == i) {
-                where.append(vars[i].val());
+                where.append(vars[i].min());
             }
-            else if (vars[i].val() != where[i]) {
-                where.set(i,vars[i].val());
+            else if (vars[i].min() != where[i]) {
+                where.set(i,vars[i].min());
                 for (int j=i+1; j<n; j++) {
-                    where.set(j,vars[j].val());
+                    where.set(j,vars[j].min());
                     int* row = bests.getRow(j);
                     for (int k=0; k<bests.len(j); k++) {
                         row[k] = -999;

@@ -14,13 +14,15 @@ uint64_t gettime() {
 
 //=====================================================================
 
-int n = 6;
-int s = 6;
+int n = 7;
+int s = 7;
 
 //------------------------------------------------------------
-Game::Game() : vars(*this,n,0,s-1), util(*this,n,1,s) {
+Game::Game() : vars(*this,n,0,s-1), util(*this,n,0,s) {
     for (int i=0; i<n; i++) setGoal(i);
+    // rel(*this, util[2], IRT_EQ, 3);
     branch(*this, vars, INT_VAR_NONE(), INT_VAL_MIN());
+    branch(*this, util, INT_VAR_NONE(), INT_VAL_MIN());
 }
 //------------------------------------------------------------
 void Game::setGoal(int i) {
@@ -51,7 +53,7 @@ int main(int argc, char const *argv[])
     }
     uint64_t t2 = gettime();
 
-    cout << "Gecode Equilibrium++" << endl;
+    cout << "Gecode Plus (Filtering without validation)" << endl;
     cout << n << " " << s << " " << t2-t1 << endl;
     
     return 0;
